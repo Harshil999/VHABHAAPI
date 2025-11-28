@@ -27,5 +27,6 @@ namespace ABHA_HIMS.Application.Interfaces
         Task<LoginVerifyOtpResponse?> VerifyAbhaNumberAbhaOtpAsync(LoginVerifyOtpRequest request);
         Task<SendOtpResponse_Login?> CreateMobileLoginOtpAsync(SendAadhaarLoginOtpRequest request);
         Task<LoginVerifyOtpResponse?> VerifyMobileLoginOtpAsync(LoginVerifyOtpRequest request);
+        Task<VerifyUserResponseDto?> VerifyUserAsync(VerifyUserRequestDto request);
     }
 }

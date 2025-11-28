@@ -568,4 +568,19 @@ public class AbhaDtos
         public string? ProfilePhoto { get; set; }
     }
 
+    public class VerifyUserRequestDto
+    {
+        public string? ABHANumber { get; set; }
+        public string? txnId { get; set; }
+        public string? tToken { get; set; }
+    }
+
+    public class VerifyUserResponseDto
+    {
+        public string? token { get; set; }
+        public int expiresIn { get; set; }
+        public string? refreshToken { get; set; }
+        public int refreshExpiresIn { get; set; }
+    }
+
 }

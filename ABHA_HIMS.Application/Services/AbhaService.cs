@@ -1138,6 +1138,48 @@ namespace ABHA_HIMS.Application.Services
             return resp;
         }
 
+        public async Task<VerifyUserResponseDto?> VerifyUserAsync(string abhaNumber, string txnId, string tToken)
+        {
+            var requestId = Guid.NewGuid().ToString();
+
+            var req = new VerifyUserRequestDto
+            {
+                ABHANumber = abhaNumber,
+                txnId = txnId,
+                tToken = tToken
+            };
+
+            VerifyUserResponseDto? resp = null;
+
+            try
+            {
+                resp = await _gateway.VerifyUserAsync(req);
+            }
+            catch (Exception ex)
+            {
+                ex.Data["RequestId"] = requestId;
+                ex.Data["Payload"] = JsonSerializer.Serialize(req);
+
+                await _audit.LogRequestAsync(
+                    "/abha/login/verify-user",
+                    JsonSerializer.Serialize(req),
+                    ex.ToString(),
+                    requestId
+                );
+
+                throw;
+            }
+
+            await _audit.LogRequestAsync(
+                "/abha/login/verify-user",
+                JsonSerializer.Serialize(req),
+                JsonSerializer.Serialize(resp),
+                ""
+            );
+
+            return resp;
+        }
+
 
         private static string ComputeSha256Hash(string raw)
         {

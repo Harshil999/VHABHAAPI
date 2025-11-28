@@ -31,5 +31,6 @@ namespace ABHA_HIMS.Application.Interfaces
         Task<LoginVerifyOtpResponse?> VerifyAbhaNumberAbhaOtpAsync(string txnId, string otpPlain);
         Task<SendOtpResponse_Login?> SendMobileLoginOtpAsync(string mobilePlain);
         Task<LoginVerifyOtpResponse?> VerifyMobileLoginOtpAsync(string txnId, string otpPlain);
+        Task<VerifyUserResponseDto?> VerifyUserAsync(string abhaNumber, string txnId, string tToken);
     }
 }

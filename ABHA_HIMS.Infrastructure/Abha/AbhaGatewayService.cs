@@ -281,4 +281,12 @@ public class AbhaGatewayService : IAbhaGatewayService
         return await _abhaHttpClient.VerifyMobileLoginOtpAsync(request, accessToken);
     }
 
+    public async Task<VerifyUserResponseDto?> VerifyUserAsync(VerifyUserRequestDto request)
+    {
+        var session = await GetSessionTokenAsync();
+        var accessToken = session?.AccessToken ?? string.Empty;
+
+        return await _abhaHttpClient.VerifyUserAsync(request, accessToken);
+    }
+
 }

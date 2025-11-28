@@ -3141,6 +3141,123 @@ public class AbhaController : ControllerBase
         }
     }
 
+    [HttpPost("login/mobile/verify-user")]
+    public async Task<IActionResult> VerifyUser([FromBody] VerifyUserRequestDto input)
+    {
+        // 1) Input Validation
+        if (input == null ||
+            string.IsNullOrWhiteSpace(input.ABHANumber) ||
+            string.IsNullOrWhiteSpace(input.txnId) ||
+            string.IsNullOrWhiteSpace(input.tToken))
+        {
+            var badResp = new ApiResponse<VerifyUserResponseDto>
+            {
+                StatusCode = 400,
+                IsSuccess = "false",
+                Message = "ABHANumber, txnId and tToken are required",
+                Data = default
+            };
+            return Ok(badResp);
+        }
+
+        try
+        {
+            // 2) Service call
+            var gatewayResp = await _abhaService.VerifyUserAsync(
+                input.ABHANumber,
+                input.txnId,
+                input.tToken
+            );
+
+            if (gatewayResp == null)
+            {
+                var nullResp = new ApiResponse<VerifyUserResponseDto>
+                {
+                    StatusCode = 502,
+                    IsSuccess = "false",
+                    Message = "ABHA gateway error",
+                    Data = null
+                };
+                return Ok(nullResp);
+            }
+
+            // 3) Return success format
+            return Ok(new ApiResponse<VerifyUserResponseDto>
+            {
+                StatusCode = 200,
+                IsSuccess = "true",
+                Message = "User verification successful",
+                Data = gatewayResp
+            });
+        }
+        catch (Exception ex)
+        {
+            // EXACT SAME ERROR MAPPING AS YOUR MOBILE-OTP VERIFY CODE
+            int statusCode = 500;
+            string message = "User verification failed";
+            string? rawBody = null;
+
+            if (ex is HttpRequestException httpEx)
+            {
+                if (httpEx.Data.Contains("StatusCode") && httpEx.Data["StatusCode"] is int sc)
+                    statusCode = sc;
+
+                if (httpEx.Data.Contains("RawBody") && httpEx.Data["RawBody"] is string rb)
+                    rawBody = rb;
+
+                if (!string.IsNullOrWhiteSpace(rawBody))
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(rawBody);
+                        var root = doc.RootElement;
+
+                        if (statusCode == 401)
+                        {
+                            string? msg = root.TryGetProperty("message", out var m1) ? m1.GetString() : null;
+                            string? desc = root.TryGetProperty("description", out var d1) ? d1.GetString() : null;
+                            message = string.Join(" - ", new[] { msg, desc }.Where(x => !string.IsNullOrWhiteSpace(x)));
+                        }
+                        else if (statusCode == 400)
+                        {
+                            foreach (var prop in root.EnumerateObject())
+                            {
+                                if (prop.NameEquals("timestamp")) continue;
+
+                                if (prop.Value.ValueKind == JsonValueKind.String)
+                                {
+                                    var val = prop.Value.GetString();
+                                    if (!string.IsNullOrWhiteSpace(val))
+                                    {
+                                        message = val;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (root.TryGetProperty("message", out var mEl))
+                                message = mEl.GetString() ?? message;
+                            else if (root.TryGetProperty("error", out var errEl) &&
+                                     errEl.TryGetProperty("message", out var emEl))
+                                message = emEl.GetString() ?? message;
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            return Ok(new ApiResponse<VerifyUserResponseDto>
+            {
+                StatusCode = statusCode,
+                IsSuccess = "false",
+                Message = message,
+                Data = null
+            });
+        }
+    }
+
 }
 
 // small DTO for encrypt endpoint

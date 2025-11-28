@@ -27,5 +27,6 @@ namespace ABHA_HIMS.Application.External
         Task<LoginVerifyOtpResponse?> VerifyAbhaNumberAbhaOtpAsync(LoginVerifyOtpRequest request, string accessToken);
         Task<SendOtpResponse_Login?> CreateMobileLoginOtpAsync(SendAadhaarLoginOtpRequest request, string accessToken);
         Task<LoginVerifyOtpResponse?> VerifyMobileLoginOtpAsync(LoginVerifyOtpRequest request, string accessToken);
+        Task<VerifyUserResponseDto?> VerifyUserAsync(VerifyUserRequestDto request, string accessToken);
     }
 }

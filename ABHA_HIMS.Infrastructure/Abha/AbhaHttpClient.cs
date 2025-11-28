@@ -1765,5 +1765,56 @@ namespace ABHA_HIMS.Infrastructure.Abha
             );
         }
 
+        public async Task<VerifyUserResponseDto?> VerifyUserAsync(VerifyUserRequestDto request, string accessToken)
+        {
+            var baseUrl = _opt.BaseUrl?.TrimEnd('/') ?? "https://abhasbx.abdm.gov.in";
+            var url = baseUrl + "/v3/profile/login/verify/user";
+
+            using var req = new HttpRequestMessage(HttpMethod.Post, url);
+
+            var requestId = Guid.NewGuid().ToString();
+
+            req.Headers.Add("REQUEST-ID", requestId);
+            req.Headers.Add("TIMESTAMP", DateTime.UtcNow.ToString("o"));
+
+            if (!string.IsNullOrWhiteSpace(request.tToken))
+                req.Headers.TryAddWithoutValidation("T-token", $"Bearer {request.tToken}");
+            //req.Headers.Add("T-token", request.tToken);   // 👈 IMPORTANT
+
+            if (!string.IsNullOrWhiteSpace(accessToken))
+                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            var bodyJson = JsonSerializer.Serialize(request);
+            req.Content = new StringContent(bodyJson, Encoding.UTF8, "application/json");
+
+            HttpResponseMessage resp;
+            string raw = "";
+
+            try
+            {
+                resp = await _http.SendAsync(req);
+            }
+            catch (Exception ex)
+            {
+                await _audit.LogRequestAsync(url, "VerifyUser", ex.ToString(), requestId);
+                throw;
+            }
+
+            raw = await resp.Content.ReadAsStringAsync();
+            await _audit.LogRequestAsync(url, bodyJson, raw, requestId);
+
+            if (!resp.IsSuccessStatusCode)
+                throw new HttpRequestException($"verify-user failed {(int)resp.StatusCode}. Body={raw}")
+                {
+                    Data = { ["StatusCode"] = (int)resp.StatusCode, ["RawBody"] = raw }
+                };
+
+            return JsonSerializer.Deserialize<VerifyUserResponseDto>(
+                raw, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            );
+        }
+
     }
 }
